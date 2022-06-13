@@ -138,8 +138,6 @@ def average_perceptron(feature_matrix, labels, T):
     Do not copy paste code from previous parts.
 
     NOTE: Iterate the data matrix by the orders returned by get_order(feature_matrix.shape[0])
-
-
     Args:
         feature_matrix -  A numpy matrix describing the given data. Each row
             represents a single data point.
@@ -157,17 +155,22 @@ def average_perceptron(feature_matrix, labels, T):
     Hint: It is difficult to keep a running average; however, it is simple to
     find a sum and divide.
     """
-    # Your code here
-    raise NotImplementedError
+    theta, theta_0 = np.zeros(feature_matrix.shape[1]), 0
+    theta_sum, theta_0_sum = theta, theta_0
+    for t in range(T):
+        for i in get_order(feature_matrix.shape[0]):
+            # theta_update = perceptron_single_step_update(feature_matrix[i, :], labels[i], theta, theta_0)
+            theta, theta_0 = perceptron_single_step_update(feature_matrix[i, :], labels[i], theta, theta_0)
+
+            theta_sum += theta
+            theta_0_sum += theta_0
+
+    nt = T * feature_matrix.shape[0]
+
+    return theta_sum/nt, theta_0_sum/nt
 
 
-def pegasos_single_step_update(
-        feature_vector,
-        label,
-        L,
-        eta,
-        current_theta,
-        current_theta_0):
+def pegasos_single_step_update(feature_vector, label, L, eta, current_theta, current_theta_0):
     """
     Properly updates the classification parameter, theta and theta_0, on a
     single step of the Pegasos algorithm
@@ -187,8 +190,18 @@ def pegasos_single_step_update(
     real valued number with the value of theta_0 after the current updated has
     completed.
     """
-    # Your code here
-    raise NotImplementedError
+    eps = 1e-5
+    new_theta = current_theta
+    new_theta_0 = current_theta_0
+    error_term = label * (np.matmul(current_theta, feature_vector) + current_theta_0)
+    if error_term <= 1:
+        new_theta = (1 - eta * L) * current_theta + eta * label * feature_vector
+        new_theta_0 = current_theta_0 + eta * label
+    else:
+        new_theta = (1 - eta * L) * current_theta
+        new_theta_0 = current_theta_0
+
+    return new_theta, new_theta_0
 
 
 def pegasos(feature_matrix, labels, T, L):
@@ -220,8 +233,16 @@ def pegasos(feature_matrix, labels, T, L):
     number with the value of the theta_0, the offset classification
     parameter, found after T iterations through the feature matrix.
     """
-    # Your code here
-    raise NotImplementedError
+    theta = np.zeros(feature_matrix.shape[1])
+    theta_0 = 0
+    eta = 1
+    count = 1
+    for t in range(T):
+        for i in get_order(feature_matrix.shape[0]):
+            theta, theta_0 = pegasos_single_step_update(feature_matrix[i, :], labels[i], L, eta, theta, theta_0)
+            count += 1
+            eta = 1/np.sqrt(count)
+    return theta, theta_0
 
 # Part II
 
@@ -243,17 +264,16 @@ def classify(feature_matrix, theta, theta_0):
     given theta and theta_0. If a prediction is GREATER THAN zero, it should
     be considered a positive classification.
     """
-    # Your code here
-    raise NotImplementedError
+
+    eps = 1e-5
+    classification = np.matmul(theta, feature_matrix.T) + theta_0
+    plus_minus = -1 * np.ones(classification.shape)
+    plus_minus[classification > eps] = 1
+
+    return plus_minus
 
 
-def classifier_accuracy(
-        classifier,
-        train_feature_matrix,
-        val_feature_matrix,
-        train_labels,
-        val_labels,
-        **kwargs):
+def classifier_accuracy(classifier, train_feature_matrix, val_feature_matrix, train_labels, val_labels, **kwargs):
     """
     Trains a linear classifier and computes accuracy.
     The classifier is trained on the train data. The classifier's
@@ -279,9 +299,15 @@ def classifier_accuracy(
     trained classifier on the training data and the second element is the
     accuracy of the trained classifier on the validation data.
     """
-    # Your code here
-    raise NotImplementedError
+    theta, theta_0 = classifier(train_feature_matrix, train_labels, **kwargs)
 
+    predictions_train = classify(train_feature_matrix, theta, theta_0)
+    predictions_val = classify(val_feature_matrix, theta, theta_0)
+
+    accuracy_train = accuracy(predictions_train, train_labels)
+    accuracy_val = accuracy(predictions_val, val_labels)
+
+    return accuracy_train, accuracy_val
 
 def extract_words(input_string):
     """
@@ -313,6 +339,25 @@ def bag_of_words(texts):
     return dictionary
 
 
+def bag_of_words_removed_stopwords(texts):
+    """
+    Inputs a list of string reviews
+    Returns a dictionary of unique unigrams occurring over the input
+
+    Feel free to change this code as guided by Problem 9
+    """
+    with open("stopwords.txt") as f:
+        stopwords = extract_words(f.read())
+
+    dictionary = {}  # maps word to unique index
+    for text in texts:
+        word_list = extract_words(text)
+        for word in word_list:
+            if word not in dictionary and word not in stopwords:
+                dictionary[word] = len(dictionary)
+    return dictionary
+
+
 def extract_bow_feature_vectors(reviews, dictionary):
     """
     Inputs a list of string reviews
@@ -333,6 +378,29 @@ def extract_bow_feature_vectors(reviews, dictionary):
         for word in word_list:
             if word in dictionary:
                 feature_matrix[i, dictionary[word]] = 1
+    return feature_matrix
+
+
+def extract_bow_feature_vectors_counts(reviews, dictionary):
+    """
+    Inputs a list of string reviews
+    Inputs the dictionary of words as given by bag_of_words
+    Returns the bag-of-words feature matrix representation of the data.
+    The returned matrix is of shape (n, m), where n is the number of reviews
+    and m the total number of entries in the dictionary.
+
+    Feel free to change this code as guided by Problem 9
+    """
+    # Your code here
+
+    num_reviews = len(reviews)
+    feature_matrix = np.zeros([num_reviews, len(dictionary)])
+
+    for i, text in enumerate(reviews):
+        word_list = extract_words(text)
+        for word in word_list:
+            if word in dictionary:
+                feature_matrix[i, dictionary[word]] += 1
     return feature_matrix
 
 
