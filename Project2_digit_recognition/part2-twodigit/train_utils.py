@@ -83,6 +83,8 @@ def run_epoch(data, model, optimizer):
         # Compute both losses
         loss1 = F.cross_entropy(out1, y[0])
         loss2 = F.cross_entropy(out2, y[1])
+        # loss1 = F.cross_entropy(predictions_first_label, y[0])
+        # loss2 = F.cross_entropy(predictions_second_label, y[1])
         losses_first_label.append(loss1.data.item())
         losses_second_label.append(loss2.data.item())
 

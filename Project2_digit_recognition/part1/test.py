@@ -173,7 +173,7 @@ def check_compute_cost_function():
     ex_name = "Compute cost function"
     n, d, k = 3, 5, 7
     X = np.arange(0, n * d).reshape(n, d)
-    Y = np.arange(0, n)
+    Y = np.arange(0, n)+2
     zeros = np.zeros((k, d))
     temp = 0.2
     lambda_factor = 0.5
@@ -183,6 +183,7 @@ def check_compute_cost_function():
             exp_res, X, Y, zeros, lambda_factor, temp):
         return
     log(green("PASS"), ex_name, "")
+
 
 def check_run_gradient_descent_iteration():
     ex_name = "Run gradient descent iteration"
